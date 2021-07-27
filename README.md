@@ -4,7 +4,7 @@
 3. 具体修改： 
    +  在yolox/data/datasets/下添加yolo.py和yolo_classes.py 
    +  在yolox/data/datasets/__init__.py中添加  
-       (1)from .yolo import YOLODataset  
-       (2)from .yolo_classes import YOLO_CLASSES 
+       - from .yolo import YOLODataset  
+       - from .yolo_classes import YOLO_CLASSES 
    +  在yolox/data/evaluators/下添加 yolo_evaluator.py 
    +  训练的配置文件参考yolox_yolo_s.py 
