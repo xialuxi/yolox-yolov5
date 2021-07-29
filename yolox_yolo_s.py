@@ -4,13 +4,14 @@ import random
 import torch
 import torch.nn as nn
 import torch.distributed as dist
-
+from yolox.data import YOLODataset, ValTransform
+from yolox.data import YOLO_CLASSES
 from yolox.exp import Exp as MyExp
 
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
-        self.num_classes = 1
+        self.num_classes = len(YOLO_CLASSES)
         self.depth = 0.33
         self.width = 0.375   # min - 0.375 ; s - 0.50
         self.scale = (0.5, 1.5)
@@ -23,7 +24,6 @@ class Exp(MyExp):
     def get_data_loader(self, batch_size, is_distributed, no_aug=False):
         from yolox.data import (
             YOLODataset,
-            CVATDataset,
             TrainTransform,
             YoloBatchSampler,
             DataLoader,
@@ -84,7 +84,6 @@ class Exp(MyExp):
         return train_loader
 
     def get_eval_loader(self, batch_size, is_distributed, testdev=False):
-        from yolox.data import ValTransform, YOLODataset
 
         valdataset = YOLODataset(
             data_dir='./data/box',
