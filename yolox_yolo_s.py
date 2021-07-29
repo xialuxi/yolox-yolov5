@@ -11,6 +11,8 @@ from yolox.exp import Exp as MyExp
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
+        self.output_dir = "./output/YOLOX_outputs"
+        self.print_interval = 100
         self.num_classes = len(YOLO_CLASSES)
         self.depth = 0.33
         self.width = 0.375   # min - 0.375 ; s - 0.50
