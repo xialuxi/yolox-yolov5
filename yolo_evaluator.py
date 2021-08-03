@@ -155,7 +155,7 @@ class YOLOEvaluator:
 
                             if pi.shape[0]:
                                 # Prediction to target ious
-                                ious, i = self.box_iou(pre_bboxes, gt_bboxes[ti]).max(1)  # best ious, indices
+                                ious, i = self.box_iou(pre_bboxes[pi], gt_bboxes[ti]).max(1)  # best ious, indices
 
                                 # Append detections
                                 detected_set = set()
