@@ -14,7 +14,9 @@ import numpy as np
 import torch
 
 from yolox.utils import gather, is_main_process, postprocess, synchronize, time_synchronized, get_local_rank
-from yolox.data.datasets import YOLO_CLASSES
+#from yolox.data.datasets import YOLO_CLASSES
+
+YOLO_CLASSES = ["box"]
 
 class YOLOEvaluator:
     """
@@ -39,8 +41,7 @@ class YOLOEvaluator:
         self.nmsthre = nmsthre
         self.num_classes = num_classes
         self.num_images = len(dataloader.dataset)
-        self.rank = 0
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     def evaluate(
         self, model, distributed=False, half=False, trt_file=None, decoder=None, test_size=None
@@ -60,11 +61,7 @@ class YOLOEvaluator:
             summary (sr): summary info of evaluation.
         """
         # TODO half to amp_test
-        tensor_type = torch.HalfTensor if half else torch.FloatTensor
-        if distributed:
-            self.local_rank = get_local_rank()
-            self.device = torch.device("cuda:{}".format(self.local_rank))
-        #model = model.to(device)
+        tensor_type = torch.cuda.HalfTensor if half else torch.cuda.FloatTensor
         model = model.eval()
         if half:
             model = model.half()
@@ -91,13 +88,13 @@ class YOLOEvaluator:
         p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
         jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
         nc = self.num_classes  # number of classes
-        iouv = torch.linspace(0.5, 0.95, 10).to(self.device)  # iou vector for mAP@0.5:0.95
+        iouv = torch.linspace(0.5, 0.95, 10).cuda()  # iou vector for mAP@0.5:0.95
         niou = iouv.numel()
         # for yolo test
 
         for cur_iter, (imgs, _, info_imgs, ids) in enumerate(progress_bar(self.dataloader)):
             with torch.no_grad():
-                imgs = imgs.type(tensor_type).to(self.device)
+                imgs = imgs.type(tensor_type)
 
                 # skip the the last iters since batchsize might be not enough for batch inference
                 is_time_record = cur_iter < len(self.dataloader) - 1
@@ -125,9 +122,10 @@ class YOLOEvaluator:
                 ##########  #####  #####  #####  #####  #####  #####  #####  #####  #####
                 # Statistics per image
                 for si, pred in enumerate(outputs):
+                    #print(cur_iter, "   -   ", si)
                     img, gt_res, img_size, index = self.dataloader.dataset.pull_item(ids[si])
                     nl = len(gt_res)
-                    gt_res = torch.from_numpy(np.array(gt_res)).to(self.device)
+                    gt_res = torch.from_numpy(np.array(gt_res)).type(tensor_type)
                     gt_bboxes, gt_cls = gt_res[:, 0:4], gt_res[:, 4]
                     seen += 1
 
@@ -135,16 +133,15 @@ class YOLOEvaluator:
                         if nl:
                             stats.append((torch.zeros(0, niou, dtype=torch.bool), torch.Tensor(), torch.Tensor(), gt_cls.cpu()))
                         continue
-
-                    pre_bboxes = pred[:, 0:4]
+                    pre_bboxes = pred[:, 0:4].clone()
                     scale = min(self.img_size[0] / float(img_size[0]), self.img_size[1] / float(img_size[1]))
                     pre_bboxes /= scale
                     #pre_bboxes = xywh2xyxy(pre_bboxes)
-                    pre_cls = pred[:, 6]
+                    pre_cls = pred[:, 6].clone()
                     #pre_scores = pred[:, 4] * pred[:, 5]
 
                     # Assign all predictions as incorrect
-                    correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool, device=self.device)
+                    correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool).cuda()
                     if nl:
                         detected = []  # target indices
                         tcls_tensor = gt_cls
@@ -164,6 +161,7 @@ class YOLOEvaluator:
                                     if d.item() not in detected_set:
                                         detected_set.add(d.item())
                                         detected.append(d)
+                                        #print("pi[j]: ", pi[j])
                                         correct[pi[j]] = ious[j] > iouv  # iou_thres is 1xn
                                         if len(detected) == nl:  # all targets already located in image
                                             break
