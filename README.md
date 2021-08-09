@@ -7,4 +7,7 @@
        - from .yolo import YOLODataset  
        - from .yolo_classes import YOLO_CLASSES 
    +  在yolox/data/evaluators/下添加 yolo_evaluator.py 
+   +  在yolox/evaluators/__init__.py中添加：
+       - from .yolo_evaluator import YOLOEvaluator
    +  训练的配置文件参考yolox_yolo_s.py 
+4. 修改代码， 多gpu下分别计算各自卡上的map，未做多gpu同步计算。 
