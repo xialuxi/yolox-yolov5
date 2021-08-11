@@ -11,3 +11,4 @@
        - from .yolo_evaluator import YOLOEvaluator
    +  训练的配置文件参考yolox_yolo_s.py 
 4. 修改代码， 多gpu下分别计算各自卡上的map，未做多gpu同步计算。 
+5. 增加多gpu计算map的代码 
